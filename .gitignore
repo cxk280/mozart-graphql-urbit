@@ -1,0 +1,5 @@
+.http.ports
+.urb
+.vere.lock
+.vscode
+home/lib/env-vars.hoon
