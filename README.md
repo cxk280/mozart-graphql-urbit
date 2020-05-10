@@ -2,7 +2,15 @@
 
 This project is a GraphQL Server established according to the official spec (see [here](https://github.com/graphql/graphql-spec) and [here](https://spec.graphql.org/June2018/)). It is client-agnostic. So far, we've been testing it with [Insomnia](https://insomnia.rest/), which offers a handy option to send a GraphQL-formatted request, but technically any HTTP POST request conforming to the spec should work.
 
-The options for using Urbit as a database are currently limited, so for the time being Mozart simply relies upon a JSON file in `/home/lib/graphql/` as its data source. Current functionality is limited to queries. 
+The options for using Urbit as a database are currently limited, so for the time being Mozart simply relies upon a JSON file in `/home/lib/graphql/` as its data source. Current functionality is limited to queries.
+
+Before running, please create a file name `env-vars.hoon` in `/home/lib` to save your environmental variables in a map in the following format:
+
+```
+(my ~[[%one 1] [%two 2] [%three 3]])
+```
+
+For testing the hackathon project, this file should contain credentials to the MongoDB Atlas database to which the GraphQL app is connecting.
 
 To test, use Insomnia or a similar tool to send a GraphQL request of the following form:
 

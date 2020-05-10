@@ -1,4 +1,4 @@
-/+  *server, default-agent, verb, dbug, graphql-schema, graphql-type-defs
+/+  *server, default-agent, verb, dbug, graphql-schema, graphql-type-defs, env-vars
 /=  getbooks-query-data
 /:  /===/lib/graphql/getbooks-query-data  /json/
 
@@ -97,6 +97,8 @@
       ~&  replace-all-final-input
       ~&  "(lent (fand ~[' '] replace-all-final-input)) below"
       ~&  (lent (fand ~[' '] replace-all-final-input))
+      ~&  "env-vars %one below"
+      ~&  (~(get by env-vars) %one)
       ::  TODO: Add a trap to run replace-all until there are no instances of multiple spaces
       =/  replace
         %^  replace-all
