@@ -11,7 +11,8 @@
     +*  this  .
       graphql-core    +>
       graphql    ~(. graphql-core bowl)
-      def   ~(. (default-agent this %|) bowl) 
+      def   ~(. (default-agent this %|) bowl)
+      do    ~(. +> bowl) 
     ::  Use on-init for initial registration (REQUIRED FOR HTTP)
     ++  on-init
       ^-  (quip card _this)
@@ -65,7 +66,13 @@
     ++  on-leave  on-leave:def
     ++  on-peek   on-peek:def
     ++  on-agent  on-agent:def
-    ++  on-arvo   on-arvo:def
+    ++  on-arvo
+      |=  [=wire =sign-arvo]
+      ^-  (quip card _this)
+      ?:  ?=(%http-response +<.sign-arvo)
+        :_  this
+        (http-response:do client-response.sign-arvo)
+      (on-arvo:def wire sign-arvo)
     ++  on-fail   on-fail:def
   --
   |_  =bowl:gall
@@ -84,27 +91,71 @@
       =,  dejs:format
       =,  gql-schema-query=gql-schema-query:graphql-schema
       =,  gql-schema-book=gql-schema-book:graphql-schema
+      ~&  "query raw argument below"
+      ~&  query
       =/  query-tape  (trip query)
       =+  to-json=(de-json:html (crip (replace-all (replace-all query-tape "\\n" "") "  " " ")))
-      =+  my-query-body-tape=(trip (~(got by ((om so) (need to-json))) 'query'))
-      =+  fand-items=[(snag 0 (fand ~[' '] my-query-body-tape)) (snag 1 (fand ~[' '] my-query-body-tape))]
-      =+  substring-range=(sub (sub (tail fand-items) (head fand-items)) 1)
-      =+  swag-cell=[(add (head fand-items) 1) substring-range]
-      =/  query-section=tape  (swag swag-cell my-query-body-tape)
-      =+  first-flop=(flop (fand ~['{'] my-query-body-tape))
-      =/  replace-all-final-input=tape  (tail (slag (head first-flop) my-query-body-tape))
+      ~&  "to-json below"
+      ~&  to-json
+      =+  om-so-need-to-json=((om so) (need to-json))
+      =+  my-body-tape=(trip (~(got by om-so-need-to-json) 'query'))
+      ~&  "my-body-tape below before remove-duplicate-spaces"
+      ~&  my-body-tape
+
+      =+  my-body-tape=(remove-duplicate-spaces my-body-tape)
+
+      ~&  "my-body-tape below after remove-duplicate-spaces"
+      ~&  my-body-tape
+
+      =+  fand-spaces=(fand ~[' '] my-body-tape)
+      ~&  "fand-spaces below"
+      ~&  fand-spaces
+      =+  fand-items-1=[(snag 0 fand-spaces) (snag 1 fand-spaces)]
+      ~&  "fand-items-1 below"
+      ~&  fand-items-1
+      =+  substring-range-1=(sub (sub (tail fand-items-1) (head fand-items-1)) 1)
+      ~&  "substring-range-1 below"
+      ~&  substring-range-1
+      =+  swag-cell-1=[(add (head fand-items-1) 1) substring-range-1]
+      ~&  "swag-cell-1 below"
+      ~&  swag-cell-1
+      =/  query-or-mutation=tape  (swag swag-cell-1 my-body-tape)
+      ~&  "query-or-mutation below"
+      ~&  query-or-mutation
+      =+  fand-items-2=[(snag 2 fand-spaces) (snag 3 fand-spaces)]
+      ~&  "fand-items-2 below"
+      ~&  fand-items-2
+      =+  substring-range-2=(sub (sub (tail fand-items-2) (head fand-items-2)) 1)
+      ~&  "substring-range-2 below"
+      ~&  substring-range-2
+      =+  swag-cell-2=[(add (head fand-items-2) 1) substring-range-2]
+      ~&  "swag-cell-2 below"
+      ~&  swag-cell-2
+      =/  query-or-mutation-name=tape  (swag swag-cell-2 my-body-tape)
+      ~&  "query-or-mutation-name below"
+      ~&  query-or-mutation-name
+      =+  first-flop=(flop (fand ~['{'] my-body-tape))
+      ~&  "first-flop below"
+      ~&  first-flop
+      =/  replace-all-final-input=tape  (tail (slag (head first-flop) my-body-tape))
       ~&  "replace-all-final-input below"
       ~&  replace-all-final-input
-      ~&  "(lent (fand ~[' '] replace-all-final-input)) below"
-      ~&  (lent (fand ~[' '] replace-all-final-input))
-      ~&  "env-vars %one below"
-      ~&  (~(get by env-vars) %one)
+      :: ~&  "env-vars %one below"
+      :: ~&  (~(get by env-vars) %one)
+      :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
+      :: ~&  (hit-rest-api 'http://167.172.210.199/')
+      :: ~&  "(hit-rest-api 'http://google.com/') below"
+      :: ~&  (hit-rest-api 'http://google.com/')
       ::  TODO: Add a trap to run replace-all until there are no instances of multiple spaces
       =/  replace
         %^  replace-all
           %^  replace-all  replace-all-final-input  " "  ""
         "}"  ""
-      =+  query-resolver-output=(gql-schema-query ~[query-section replace])
+      ~&  "replace below"
+      ~&  replace
+      ::  Add code here to determine between mutations and queries
+      =+  query-resolver-output=(gql-schema-query ~[query-or-mutation-name replace])
+      :: Below, there should be a conditional for each valid query. This should later be abstracted to a separate file
       ?:  =((head (tail query-resolver-output)) "getBooks")
         =+  book-resolver-output=(gql-schema-book query-resolver-output)
         (crip ~(ram re >book-resolver-output<))
@@ -123,5 +174,38 @@
       |=  {p/cord c/tape}
       ^-  tape
       (weld c (trip p))
+    ++  remove-duplicate-spaces
+      |=  input=tape
+      ^-  tape
+      =+  output=input
+      |-
+      ?:  =((lent (fand "  " output)) 0)
+        output
+      $(output (replace-all output "  " " "))
+    ++  hit-rest-api
+      |=  url=@t
+      :: ^-  request:http
+      :: =/  hed  [['Accept' 'application/json']]~
+      :: =/  req/request:http  [%'GET' url hed *(unit octs)]
+      :: =/  out  *outbound-config:iris
+      :: =/  req  [%'GET' 'https://google.com' ['Accept' 'application/json']~ ~]
+      :: [%pass /my-request-wire/[(scot %da now.bowl)] %arvo %i %request req *outbound-config:iris]
+      ^-  (list card)
+      =/  hed  ['Accept' 'application/json']~
+      =/  out  *outbound-config:iris
+      =/  req=request:http  [%'GET' url hed ~]
+      [%pass /my-request-wire/[(scot %da now.bowl)] %arvo %i %request req out]~
+    ++  http-response
+      |=  res=client-response:iris
+      ^-  (list card)
+      ::  ignore all but %finished
+      ?.  ?=(%finished -.res)
+        ~
+      =/  data=(unit mime-data:iris)  full-file.res
+      ?~  data
+        ~
+      ~&  "data in http-response"
+      ~&  data
+      [%pass / %arvo %d %flog %text (trip q.data.u.data)]~
   --
   
