@@ -187,7 +187,21 @@
       ^-  @t
       ~&  "body in process-mutation-argument below"
       ~&  body
-      'Mutation contains argument'
+      =+  opening-parens-index=(snag 0 (fand ~['('] body))
+      ~&  "opening-parens-index in process-mutation-argument below"
+      ~&  opening-parens-index
+      =+  closing-parens-index=(snag 0 (fand ~[')'] body))
+      ~&  "closing-parens-index in process-mutation-argument below"
+      ~&  closing-parens-index
+      =+  length-of-argument-body=(sub closing-parens-index opening-parens-index)
+      ?:  (lte length-of-argument-body 1)
+        'Mutation argument is empty'
+      ~&  "length-of-argument-body in process-mutation-argument below"
+      ~&  length-of-argument-body
+      =+  argument-body=(swag [(add opening-parens-index 1) (sub length-of-argument-body 1)] body)
+      ~&  "(crip argument-body) in process-mutation-argument below"
+      ~&  (crip argument-body)
+      'Mutation contains the following argument'
     ++  contains
       |=  [to-check=tape body=tape]
       ?:  (gth (lent (fand to-check body)) 0)
