@@ -89,77 +89,110 @@
       |=  query=@t
       ^-  @t
       =,  dejs:format
-      =,  gql-schema-query=gql-schema-query:graphql-schema
-      =,  gql-schema-book=gql-schema-book:graphql-schema
       ~&  "query raw argument below"
       ~&  query
       =/  query-tape  (trip query)
       =+  to-json=(de-json:html (crip (replace-all (replace-all query-tape "\\n" "") "  " " ")))
-      ~&  "to-json below"
-      ~&  to-json
+      :: ~&  "to-json below"
+      :: ~&  to-json
       =+  om-so-need-to-json=((om so) (need to-json))
       =+  my-body-tape=(trip (~(got by om-so-need-to-json) 'query'))
-      ~&  "my-body-tape below before remove-duplicate-spaces"
-      ~&  my-body-tape
-
       =+  my-body-tape=(remove-duplicate-spaces my-body-tape)
-
       ~&  "my-body-tape below after remove-duplicate-spaces"
       ~&  my-body-tape
-
       =+  fand-spaces=(fand ~[' '] my-body-tape)
-      ~&  "fand-spaces below"
-      ~&  fand-spaces
+      :: ~&  "fand-spaces below"
+      :: ~&  fand-spaces
       =+  fand-items-1=[(snag 0 fand-spaces) (snag 1 fand-spaces)]
-      ~&  "fand-items-1 below"
-      ~&  fand-items-1
+      :: ~&  "fand-items-1 below"
+      :: ~&  fand-items-1
       =+  substring-range-1=(sub (sub (tail fand-items-1) (head fand-items-1)) 1)
-      ~&  "substring-range-1 below"
-      ~&  substring-range-1
+      :: ~&  "substring-range-1 below"
+      :: ~&  substring-range-1
       =+  swag-cell-1=[(add (head fand-items-1) 1) substring-range-1]
-      ~&  "swag-cell-1 below"
-      ~&  swag-cell-1
+      :: ~&  "swag-cell-1 below"
+      :: ~&  swag-cell-1
       =/  query-or-mutation=tape  (swag swag-cell-1 my-body-tape)
-      ~&  "query-or-mutation below"
-      ~&  query-or-mutation
+      :: ~&  "query-or-mutation below"
+      :: ~&  query-or-mutation
       =+  fand-items-2=[(snag 2 fand-spaces) (snag 3 fand-spaces)]
-      ~&  "fand-items-2 below"
-      ~&  fand-items-2
+      :: ~&  "fand-items-2 below"
+      :: ~&  fand-items-2
       =+  substring-range-2=(sub (sub (tail fand-items-2) (head fand-items-2)) 1)
-      ~&  "substring-range-2 below"
-      ~&  substring-range-2
+      :: ~&  "substring-range-2 below"
+      :: ~&  substring-range-2
       =+  swag-cell-2=[(add (head fand-items-2) 1) substring-range-2]
-      ~&  "swag-cell-2 below"
-      ~&  swag-cell-2
+      :: ~&  "swag-cell-2 below"
+      :: ~&  swag-cell-2
       =/  query-or-mutation-name=tape  (swag swag-cell-2 my-body-tape)
-      ~&  "query-or-mutation-name below"
-      ~&  query-or-mutation-name
+      :: ~&  "query-or-mutation-name below"
+      :: ~&  query-or-mutation-name
+      ?:  =(query-or-mutation "mutation")
+        (process-mutation my-body-tape)
+      ::  Later add error handling for misspelled request that do not start with "query" or "mutation"
       =+  first-flop=(flop (fand ~['{'] my-body-tape))
-      ~&  "first-flop below"
-      ~&  first-flop
+      :: ~&  "first-flop below"
+      :: ~&  first-flop
       =/  replace-all-final-input=tape  (tail (slag (head first-flop) my-body-tape))
-      ~&  "replace-all-final-input below"
-      ~&  replace-all-final-input
+      :: ~&  "replace-all-final-input below"
+      :: ~&  replace-all-final-input
       :: ~&  "env-vars %one below"
       :: ~&  (~(get by env-vars) %one)
       :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
       :: ~&  (hit-rest-api 'http://167.172.210.199/')
       :: ~&  "(hit-rest-api 'http://google.com/') below"
       :: ~&  (hit-rest-api 'http://google.com/')
-      ::  TODO: Add a trap to run replace-all until there are no instances of multiple spaces
       =/  replace
         %^  replace-all
           %^  replace-all  replace-all-final-input  " "  ""
         "}"  ""
       ~&  "replace below"
       ~&  replace
-      ::  Add code here to determine between mutations and queries
-      =+  query-resolver-output=(gql-schema-query ~[query-or-mutation-name replace])
+      ?:  =(query-or-mutation "query")
+        (process-query [query-or-mutation-name replace])
+      'Request is not valid'
+    ++  process-query
+      |=  [query-name=tape replace=tape]
+      ^-  @t
+      =,  gql-schema-query=gql-schema-query:graphql-schema
+      =,  gql-schema-book=gql-schema-book:graphql-schema
+      =+  query-resolver-output=(gql-schema-query ~[query-name replace])
       :: Below, there should be a conditional for each valid query. This should later be abstracted to a separate file
       ?:  =((head (tail query-resolver-output)) "getBooks")
         =+  book-resolver-output=(gql-schema-book query-resolver-output)
         (crip ~(ram re >book-resolver-output<))
       'Query is not valid'
+    ++  process-mutation
+      |=  body=tape
+      ^-  @t
+      ~&  "body in process-mutation below"
+      ~&  body
+      ::  Get the indices of the occurrence of the '{' character
+      =+  mutation-fand=(fand ~['{'] body)
+      ~&  "mutation-fand below"
+      ~&  mutation-fand
+      ::  See if the substring between the first two indices of the '{' character contains the character '('
+      =+  parens-test-substring=(swag [(snag 0 mutation-fand) (snag 1 mutation-fand)] body)
+      =+  contains-opening-parens=(contains [~['('] parens-test-substring])
+      ~&  "contains-opening-parens below"
+      ~&  contains-opening-parens
+      =+  contains-closing-parens=(contains [~[')'] parens-test-substring])
+      ~&  "contains-closing-parens below"
+      ~&  contains-closing-parens
+      ?:  &(contains-opening-parens contains-closing-parens) 
+        (process-mutation-argument body)
+      'Mutation does not contain argument'
+    ++  process-mutation-argument
+      |=  body=tape
+      ^-  @t
+      ~&  "body in process-mutation-argument below"
+      ~&  body
+      'Mutation contains argument'
+    ++  contains
+      |=  [to-check=tape body=tape]
+      ?:  (gth (lent (fand to-check body)) 0)
+        %.y
+      %.n
     ++  replace-all
       |=  [input=tape find=tape replace=tape]
       ^-  tape
