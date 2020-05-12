@@ -179,12 +179,18 @@
       =+  contains-closing-parens=(contains [~[')'] parens-test-substring])
       ~&  "contains-closing-parens below"
       ~&  contains-closing-parens
+      ~&  "[mutation-fand body] below"
+      ~&  [mutation-fand body]
       ?:  &(contains-opening-parens contains-closing-parens) 
-        (process-mutation-argument body)
-      'Mutation does not contain argument'
+        (process-mutation-argument [mutation-fand body])
+        :: (process-mutation-argument body)
+      'Error: mutation does not contain argument'
     ++  process-mutation-argument
-      |=  body=tape
+      :: |=  body=tape
+      |=  [mutation-fand=(list @) body=tape]
       ^-  @t
+      ~&  "mutation-fand in process-mutation-argument below"
+      ~&  mutation-fand
       ~&  "body in process-mutation-argument below"
       ~&  body
       =+  opening-parens-index=(snag 0 (fand ~['('] body))
@@ -195,13 +201,28 @@
       ~&  closing-parens-index
       =+  length-of-argument-body=(sub closing-parens-index opening-parens-index)
       ?:  (lte length-of-argument-body 1)
-        'Mutation argument is empty'
+        'Error: mutation argument is empty'
       ~&  "length-of-argument-body in process-mutation-argument below"
       ~&  length-of-argument-body
       =+  argument-body=(swag [(add opening-parens-index 1) (sub length-of-argument-body 1)] body)
       ~&  "(crip argument-body) in process-mutation-argument below"
       ~&  (crip argument-body)
-      'Mutation contains the following argument'
+      (process-mutation-body [body argument-body mutation-fand])
+      :: (crip (zing ~["Mutation contains the following argument: " argument-body]))
+    ++  process-mutation-body
+      |=  [body=tape argument-body=tape mutation-fand=(list @)]
+      ^-  @t
+      ~&  "body in process-mutation-body below"
+      ~&  body
+      ~&  "argument-body in process-mutation-body below"
+      ~&  argument-body
+      ~&  "mutation-fand in process-mutation-body below"
+      ~&  mutation-fand
+      =+  main-body-of-mutation=(swag [(snag 1 mutation-fand) (snag 2 mutation-fand)] body)
+      ~&  "main-body-of-mutation in process-mutation-body below"
+      ~&  main-body-of-mutation
+      (crip body)
+      :: (crip argument-body)
     ++  contains
       |=  [to-check=tape body=tape]
       ?:  (gth (lent (fand to-check body)) 0)
