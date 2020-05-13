@@ -18,17 +18,17 @@
 |%
   +$  item-body  [item-key=tape item-value=tape]
   +$  item-container  [tipe=tape item-bodies=(list item-body)]
-  +$  query-body  [query-name=tape item-containers=(list item-container)]
-  +$  query-container  [tipe=tape query=(list tape)]
+  +$  request-body  [request-name=tape item-containers=(list item-container)]
+  +$  request-container  [tipe=tape query=(list tape)]
   ++  type-query
     |=  a/(list tape)
-    ^-  query-container
+    ^-  request-container
     ?~  a
       !!
     ["Query" a]
   ++  type-book
-    |=  a/query-container
-    ^-  query-body
+    |=  a/request-container
+    ^-  request-body
     ?~  a
       !!
     =+  query=(tail a)
@@ -50,4 +50,10 @@
       ?:  =(["author" "title" ~] t.query)
         $(output (snoc output ["Book" [["author" (head name-and-title)] ["title" (tail name-and-title)] ~]]), iterator (add iterator 1))
     !!
+    ++  type-mutation
+      |=  a/(list tape)
+      ^-  request-container
+      ?~  a
+        !!
+      ["Mutation" a]
 --

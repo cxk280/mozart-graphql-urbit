@@ -218,11 +218,31 @@
       ~&  argument-body
       ~&  "mutation-fand in process-mutation-body below"
       ~&  mutation-fand
+      =+  start-cutting-name-here=(add (snag 1 (fand ~[' '] body)) 1)
+      =+  end-cutting-name-here=(sub (sub (snag 0 (fand ~['('] body)) (snag 1 (fand ~[' '] body))) 1)
+      =+  mutation-name-fand=(swag [start-cutting-name-here end-cutting-name-here] body)
+      =+  mutation-name-fand-test=(snag 0 (fand ~['('] body))
+      ~&  "(crip mutation-name-fand) in process-mutation-body below"
+      ~&  (crip mutation-name-fand)
+      :: ~&  "(crip mutation-name-fand-test) in process-mutation-body below"
+      :: ~&  (crip mutation-name-fand-test)
+      ~&  "mutation-name-fand-test in process-mutation-body below"
+      ~&  mutation-name-fand-test
       =+  main-body-of-mutation=(swag [(snag 1 mutation-fand) (snag 2 mutation-fand)] body)
-      ~&  "main-body-of-mutation in process-mutation-body below"
-      ~&  main-body-of-mutation
-      (crip body)
+      ~&  "(crip main-body-of-mutation) in process-mutation-body below"
+      ~&  (crip main-body-of-mutation)
+      (crip main-body-of-mutation)
+      :: (crip body)
       :: (crip argument-body)
+
+      :: Need to pass in something like the following to gql-schema-mutation below: [i="getBooks" t=<<"author">>]
+      :: =,  gql-schema-mutation=gql-schema-mutation:graphql-schema
+      :: =+  mutation-resolver-output=(gql-schema-mutation ~[query-name replace])
+
+    ++  parse-mutation-argument
+      |=  argument=tape
+      ^-  @t
+      (crip argument)
     ++  contains
       |=  [to-check=tape body=tape]
       ?:  (gth (lent (fand to-check body)) 0)
