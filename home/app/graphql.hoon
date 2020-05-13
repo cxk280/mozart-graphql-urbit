@@ -91,65 +91,116 @@
       =,  dejs:format
       ~&  "query raw argument below"
       ~&  query
+
+      ::  Take the query, which is a cord, and turn it into a tape
       =/  query-tape  (trip query)
+
+      ::  Replace instances of certain tapes in query-tap, turn it back into a cord and parse it as JSON
       =+  to-json=(de-json:html (crip (replace-all (replace-all query-tape "\\n" "") "  " " ")))
-      :: ~&  "to-json below"
-      :: ~&  to-json
+      ::  Turn to-json to a unit with need
+
+      ::  Then parse (with om) the object inside as a map
+      ::  And (with so) the string inside that as a cord
+      ::  The final output of om-so-need-to-json is a map
+      ::  See ++om:dejs:format and ++so:dejs:format in zuse.hoon
       =+  om-so-need-to-json=((om so) (need to-json))
+
+      ::  Access the value at the 'query' key in the om-so-need-to-json map using +-got:by
+      ::  See https://urbit.org/docs/reference/library/2i/#got-by
       =+  my-body-tape=(trip (~(got by om-so-need-to-json) 'query'))
+
+      ::  Remove duplicate spaces from my-body-tape
       =+  my-body-tape=(remove-duplicate-spaces my-body-tape)
       ~&  "my-body-tape below after remove-duplicate-spaces"
       ~&  my-body-tape
+
+      ::  Create a list of indices of every occurence of the ' ' in my-body-tape
       =+  fand-spaces=(fand ~[' '] my-body-tape)
-      :: ~&  "fand-spaces below"
-      :: ~&  fand-spaces
+      ~&  "fand-spaces below"
+      ~&  fand-spaces
+
+      ::  Create a cell with the first two elements of the fand-spaces list
+      ::  This corresponds to the first two occurences of the ' ' in my-body-tape
       =+  fand-items-1=[(snag 0 fand-spaces) (snag 1 fand-spaces)]
-      :: ~&  "fand-items-1 below"
-      :: ~&  fand-items-1
+      ~&  "fand-items-1 below"
+      ~&  fand-items-1
+
+      ::  Get the number of characters between the first two spaces in the tape
+      ::  These will be used to get the first word, i.e. "query" or "mutation"
       =+  substring-range-1=(sub (sub (tail fand-items-1) (head fand-items-1)) 1)
-      :: ~&  "substring-range-1 below"
-      :: ~&  substring-range-1
+      ~&  "substring-range-1 below"
+      ~&  substring-range-1
+
+      ::  Create a cell that will passed as a sample to swag, which makes a substring from a longer string
+      ::  The head of that cell is the inclusive index at which to start
+      ::  The tail of that cell is the number of following characters to include in the substring
+      ::  We add 1 to the head so it begins on the character after the first space in the tape
       =+  swag-cell-1=[(add (head fand-items-1) 1) substring-range-1]
-      :: ~&  "swag-cell-1 below"
-      :: ~&  swag-cell-1
+      ~&  "swag-cell-1 below"
+      ~&  swag-cell-1
+
+      ::  Use swag to determine if the first word in the tape is "query" or "mutation"
+      ::  TODO: Add error handling for misspelled request that do not start with "query" or "mutation"
       =/  query-or-mutation=tape  (swag swag-cell-1 my-body-tape)
-      :: ~&  "query-or-mutation below"
-      :: ~&  query-or-mutation
+      ~&  "query-or-mutation below"
+      ~&  query-or-mutation
+
+      ::  Create a cell with the indices of the third and four spaces in the tape
       =+  fand-items-2=[(snag 2 fand-spaces) (snag 3 fand-spaces)]
-      :: ~&  "fand-items-2 below"
-      :: ~&  fand-items-2
+      ~&  "fand-items-2 below"
+      ~&  fand-items-2
+
+      ::  Get the number of characters between the third and fourth spaces in the tape
+      ::  These will be used to get the second word, i.e. "getBooks"
       =+  substring-range-2=(sub (sub (tail fand-items-2) (head fand-items-2)) 1)
-      :: ~&  "substring-range-2 below"
-      :: ~&  substring-range-2
+      ~&  "substring-range-2 below"
+      ~&  substring-range-2
+
+      ::  Create a cell that will passed as a sample to swag
+      ::  We add 1 to the head so it begins on the character after the third space in the tape
       =+  swag-cell-2=[(add (head fand-items-2) 1) substring-range-2]
-      :: ~&  "swag-cell-2 below"
-      :: ~&  swag-cell-2
+      ~&  "swag-cell-2 below"
+      ~&  swag-cell-2
+
+      ::  Make a tape of the second word in the tape, i.e. "getBooks"
       =/  query-or-mutation-name=tape  (swag swag-cell-2 my-body-tape)
-      :: ~&  "query-or-mutation-name below"
-      :: ~&  query-or-mutation-name
-      ::  Later add error handling for misspelled request that do not start with "query" or "mutation"
+      ~&  "query-or-mutation-name below"
+      ~&  query-or-mutation-name
+
+      ::  Make a list of all indices of the character { in the tape and reverse it
       =+  first-flop=(flop (fand ~['{'] my-body-tape))
-      :: ~&  "first-flop below"
-      :: ~&  first-flop
-      =/  replace-all-final-input=tape  (tail (slag (head first-flop) my-body-tape))
-      ~&  "replace-all-final-input below"
-      ~&  replace-all-final-input
+      ~&  "first-flop below"
+      ~&  first-flop
+
+      ::  Make a tape of everything after the last occurrence of {
+      =+  slagged=(slag (head first-flop) my-body-tape)
+      ~&  "slagged below"
+      ~&  slagged
+
       :: ~&  "env-vars %one below"
       :: ~&  (~(get by env-vars) %one)
       :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
       :: ~&  (hit-rest-api 'http://167.172.210.199/')
-      :: ~&  "(hit-rest-api 'http://google.com/') below"
-      :: ~&  (hit-rest-api 'http://google.com/')
+
+      ::  Get rid of remaining characters we don't want
       =/  replace
         %^  replace-all
-          %^  replace-all  replace-all-final-input  " "  ""
-        "}"  ""
+          %^  replace-all
+            %^  replace-all  slagged  " "  ""
+          "}"  ""
+        "\{"  ""
       ~&  "replace below"
       ~&  replace
+
+      ::  If it's a mutation, go to the process-mutation arm
       ?:  =(query-or-mutation "mutation")
         (process-mutation [my-body-tape replace])
+
+      ::  If it's a query, go to the process-query arm
       ?:  =(query-or-mutation "query")
         (process-query [query-or-mutation-name replace])
+      
+      ::  Else return an error (just a cord rather than formal error for now)
       'Request is not valid'
     ++  process-query
       |=  [query-name=tape replace=tape]
