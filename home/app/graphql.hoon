@@ -127,15 +127,13 @@
       =/  query-or-mutation-name=tape  (swag swag-cell-2 my-body-tape)
       :: ~&  "query-or-mutation-name below"
       :: ~&  query-or-mutation-name
-      ?:  =(query-or-mutation "mutation")
-        (process-mutation my-body-tape)
       ::  Later add error handling for misspelled request that do not start with "query" or "mutation"
       =+  first-flop=(flop (fand ~['{'] my-body-tape))
       :: ~&  "first-flop below"
       :: ~&  first-flop
       =/  replace-all-final-input=tape  (tail (slag (head first-flop) my-body-tape))
-      :: ~&  "replace-all-final-input below"
-      :: ~&  replace-all-final-input
+      ~&  "replace-all-final-input below"
+      ~&  replace-all-final-input
       :: ~&  "env-vars %one below"
       :: ~&  (~(get by env-vars) %one)
       :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
@@ -148,6 +146,8 @@
         "}"  ""
       ~&  "replace below"
       ~&  replace
+      ?:  =(query-or-mutation "mutation")
+        (process-mutation [my-body-tape replace])
       ?:  =(query-or-mutation "query")
         (process-query [query-or-mutation-name replace])
       'Request is not valid'
@@ -163,10 +163,12 @@
         (crip ~(ram re >book-resolver-output<))
       'Query is not valid'
     ++  process-mutation
-      |=  body=tape
+      |=  [body=tape replace=tape]
       ^-  @t
       ~&  "body in process-mutation below"
       ~&  body
+      ~&  "replace in process-mutation below"
+      ~&  replace
       ::  Get the indices of the occurrence of the '{' character
       =+  mutation-fand=(fand ~['{'] body)
       ~&  "mutation-fand below"
@@ -182,17 +184,19 @@
       ~&  "[mutation-fand body] below"
       ~&  [mutation-fand body]
       ?:  &(contains-opening-parens contains-closing-parens) 
-        (process-mutation-argument [mutation-fand body])
+        (process-mutation-argument [mutation-fand body replace])
         :: (process-mutation-argument body)
       'Error: mutation does not contain argument'
     ++  process-mutation-argument
       :: |=  body=tape
-      |=  [mutation-fand=(list @) body=tape]
+      |=  [mutation-fand=(list @) body=tape replace=tape]
       ^-  @t
       ~&  "mutation-fand in process-mutation-argument below"
       ~&  mutation-fand
       ~&  "body in process-mutation-argument below"
       ~&  body
+      ~&  "replace in process-mutation-argument below"
+      ~&  replace
       =+  opening-parens-index=(snag 0 (fand ~['('] body))
       ~&  "opening-parens-index in process-mutation-argument below"
       ~&  opening-parens-index
@@ -207,10 +211,10 @@
       =+  argument-body=(swag [(add opening-parens-index 1) (sub length-of-argument-body 1)] body)
       ~&  "(crip argument-body) in process-mutation-argument below"
       ~&  (crip argument-body)
-      (process-mutation-body [body argument-body mutation-fand])
+      (process-mutation-body [body argument-body mutation-fand replace])
       :: (crip (zing ~["Mutation contains the following argument: " argument-body]))
     ++  process-mutation-body
-      |=  [body=tape argument-body=tape mutation-fand=(list @)]
+      |=  [body=tape argument-body=tape mutation-fand=(list @) replace=tape]
       ^-  @t
       ~&  "body in process-mutation-body below"
       ~&  body
@@ -218,6 +222,8 @@
       ~&  argument-body
       ~&  "mutation-fand in process-mutation-body below"
       ~&  mutation-fand
+      ~&  "replace in process-mutation-body below"
+      ~&  replace
       =+  start-cutting-name-here=(add (snag 1 (fand ~[' '] body)) 1)
       =+  end-cutting-name-here=(sub (sub (snag 0 (fand ~['('] body)) (snag 1 (fand ~[' '] body))) 1)
       =+  mutation-name-fand=(swag [start-cutting-name-here end-cutting-name-here] body)
