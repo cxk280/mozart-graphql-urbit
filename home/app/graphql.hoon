@@ -97,6 +97,8 @@
 
       ::  Replace instances of certain tapes in query-tap, turn it back into a cord and parse it as JSON
       =+  to-json=(de-json:html (crip (replace-all (replace-all query-tape "\\n" "") "  " " ")))
+      ~&  "to-json below"
+      ~&  to-json
       ::  Turn to-json to a unit with need
 
       ::  Then parse (with om) the object inside as a map
@@ -181,7 +183,11 @@
       :: ~&  (~(get by env-vars) %one)
       :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
       :: ~&  (hit-rest-api 'http://167.172.210.199/')
-
+      =/  rest-api-result  (hit-rest-api 'http://www.google.com/')
+      ~&  "rest-api-result below"
+      ~&  rest-api-result
+      ~&  "(test-parser \"a thing\") below"
+      ~&  (test-parser "a thing")
       ::  Get rid of remaining characters we don't want
       =/  replace
         %^  replace-all
@@ -305,13 +311,53 @@
       ?:  (gth (lent (fand to-check body)) 0)
         %.y
       %.n
+    ++  test-parser
+      |=  input=tape
+      ^-  tape
+     
+      (rash '{one { two { three} } }' item)
+      ::  TODO for query/mutation parsing:
+      ::  scan the tape
+      
+      :: (scan "\{ query }" (ifix [leb reb] (ifix [ace ace] (star alf))))
+      :: (rash '{ query }' (ifix [leb reb] (ifix [ace ace] (star alf))))
+      :: (rash '{ query { getBooks { author } } }' (ifix [leb reb] (ifix [ace ace] (star alf))))
+      :: (scan "\{ query \{ getBooks \{ author } } }" (ifix [leb reb] (ifix [ace ace] (star alf))))
+      :: %+  scan  input
+      :: %-  star
+      :: ;~  pose
+        :: %+  cold  (crip replace)
+          :: (jest (crip find))
+        :: next
+      :: ==
+    ++  item
+      %+  knee  *(list cord)  |.  ~+
+      %+  ifix  [lob rob]
+      %+  ifix  [. .]:(star gah)
+      ;~  plug
+        name
+      ::
+        ;~  pose
+          ;~(pfix (star gah) item)
+          (easy ~)
+        ==
+      ==
+    ++  name  (cook crip (star aln))
     ++  replace-all
       |=  [input=tape find=tape replace=tape]
       ^-  tape
+      ::  roll is: left fold: moves left to right across a list a, recursively slamming a binary gate b with an element from the list and an accumulator, producing the final value of the accumulator
       %+  roll
+        ::  scan takes in a tape and outputs a rule
         %+  scan  input
+        ::  star takes in a parser and outputs a parser
         %-  star
+        :: ;~ is terminated with ==
+        :: Here you can think of pose as giving a list of parsers you want to try, in the order you want to try them
         ;~  pose
+          :: cold is another parser builder function like star. Where the second argument is a parser and the first argument is some constant noun
+          :: jest is another parser creator that lets you parse string literals. You pass in a string and get back a parser that only parses exactly that string
+          :: next is a very simple parser which just means advance one character and produce that next character 
           %+  cold  (crip replace)
             (jest (crip find))
           next
