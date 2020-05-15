@@ -34,27 +34,19 @@
           %handle-http-request
         =+  !<([eyre-id=@ta =inbound-request:eyre] vase)
         :_  this
-        %+  give-simple-payload:app  eyre-id
+        :: %+  give-simple-payload:app  eyre-id
 
         :: With authorization
         :: %+  require-authorization:app  inbound-request
         :: poke-handle-http-request:graphql
 
         :: Without authorization
-        (poke-handle-http-request:graphql inbound-request)
+        =/  my-request  (poke-handle-http-request:graphql inbound-request)
+        ::  cards:my-request has the HTTP GET request to send out, as a (list card)
+        :: payload:my-request
+        %+  weld  cards:my-request
+        (give-simple-payload:app eyre-id payload:my-request)
       ==
-
-    ::  +simple-payload: a simple, one event response used for generators
-    ::
-    :: +$  simple-payload
-      :: $:  ::  response-header: status code, etc
-          ::
-          :: =response-header
-          ::  data: the data returned as the body
-          ::
-          :: data=(unit octs)
-      :: ==
-    :: --
 
     ::  Use on-watch for handling/accepting initial subscription for each request (REQUIRED FOR HTTP)
     ++  on-watch
@@ -78,16 +70,19 @@
   |_  =bowl:gall
     ++  poke-handle-http-request   
       |=  req=inbound-request:eyre
-      ^-  simple-payload:http
+      ^-  [payload=simple-payload:http cards=(list card)]
       ?~  body.request.req
         ~&  %invalid-post-no-body
           !!
       =+  request-body=q.u.body.request.req
-      =/  parsed-payload  (trip (parse-graphql-request `@t`request-body))
-      [[200 ~] [~ (as-octt:mimes:html parsed-payload)]]
+      =/  gql-request  (parse-graphql-request `@t`request-body)
+      =/  parsed-payload  (trip response-tape:gql-request)
+      ~&  "cards:gql-request in poke-handle-http-request below"
+      ~&  cards.gql-request
+      [[[200 ~] [~ (as-octt:mimes:html parsed-payload)]] cards.gql-request]
     ++  parse-graphql-request
       |=  query=@t
-      ^-  @t
+      ^-  [response-tape=@t cards=(list card)]
       =,  dejs:format
       ~&  "query raw argument below"
       ~&  query
@@ -126,6 +121,9 @@
       =+  fand-items-1=[(snag 0 fand-spaces) (snag 1 fand-spaces)]
       ~&  "fand-items-1 below"
       ~&  fand-items-1
+
+      :: Delete the following line
+      :: (sell (mule |.(slap !>(.) (ream “~[1 2 3]”))))
 
       ::  Get the number of characters between the first two spaces in the tape
       ::  These will be used to get the first word, i.e. "query" or "mutation"
@@ -183,11 +181,9 @@
       :: ~&  (~(get by env-vars) %one)
       :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
       :: ~&  (hit-rest-api 'http://167.172.210.199/')
-      =/  rest-api-result  (hit-rest-api 'http://www.google.com/')
+      =/  rest-api-result  (hit-rest-api 'http://167.172.210.199/')
       ~&  "rest-api-result below"
       ~&  rest-api-result
-      ~&  "(test-parser \"a thing\") below"
-      ~&  (test-parser "a thing")
       ::  Get rid of remaining characters we don't want
       =/  replace
         %^  replace-all
@@ -200,14 +196,14 @@
 
       ::  If it's a mutation, go to the process-mutation arm
       ?:  =(query-or-mutation "mutation")
-        (process-mutation [my-body-tape replace])
+        [(process-mutation [my-body-tape replace]) rest-api-result]
 
       ::  If it's a query, go to the process-query arm
       ?:  =(query-or-mutation "query")
-        (process-query [query-or-mutation-name replace])
+        [(process-query [query-or-mutation-name replace]) rest-api-result]
       
       ::  Else return an error (just a cord rather than formal error for now)
-      'Request is not valid'
+      ['Request is not valid' rest-api-result]
     ++  process-query
       |=  [query-name=tape replace=tape]
       ^-  @t
@@ -316,20 +312,6 @@
       ^-  tape
      
       (rash '{one { two { three} } }' item)
-      ::  TODO for query/mutation parsing:
-      ::  scan the tape
-      
-      :: (scan "\{ query }" (ifix [leb reb] (ifix [ace ace] (star alf))))
-      :: (rash '{ query }' (ifix [leb reb] (ifix [ace ace] (star alf))))
-      :: (rash '{ query { getBooks { author } } }' (ifix [leb reb] (ifix [ace ace] (star alf))))
-      :: (scan "\{ query \{ getBooks \{ author } } }" (ifix [leb reb] (ifix [ace ace] (star alf))))
-      :: %+  scan  input
-      :: %-  star
-      :: ;~  pose
-        :: %+  cold  (crip replace)
-          :: (jest (crip find))
-        :: next
-      :: ==
     ++  item
       %+  knee  *(list cord)  |.  ~+
       %+  ifix  [lob rob]
@@ -375,12 +357,6 @@
       $(output (replace-all output "  " " "))
     ++  hit-rest-api
       |=  url=@t
-      :: ^-  request:http
-      :: =/  hed  [['Accept' 'application/json']]~
-      :: =/  req/request:http  [%'GET' url hed *(unit octs)]
-      :: =/  out  *outbound-config:iris
-      :: =/  req  [%'GET' 'https://google.com' ['Accept' 'application/json']~ ~]
-      :: [%pass /my-request-wire/[(scot %da now.bowl)] %arvo %i %request req *outbound-config:iris]
       ^-  (list card)
       =/  hed  ['Accept' 'application/json']~
       =/  out  *outbound-config:iris
