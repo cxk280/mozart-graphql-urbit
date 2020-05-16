@@ -35,7 +35,7 @@
       ?+  mark  (on-poke:def mark vase)
           %handle-http-request
         =+  !<([eyre-id=@ta =inbound-request:eyre] vase)
-        :_  this
+        :: :_  this
         =^  cards  state
           (poke-handle-http-request:graphql inbound-request eyre-id)
         [cards this]
@@ -71,7 +71,8 @@
       ?~  body.request.req
         ~&  %invalid-post-no-body
           !!
-      =+  db-ip=(~(get by env-vars) %db-ip)
+      :: =+  db-ip=(~(get by env-vars) %db-ip)
+      =+  db-ip='http://167.172.210.199/'
       ~&  "db-ip in poke-handle-http-request below"
       ~&  db-ip
       =+  request-body=q.u.body.request.req
@@ -80,98 +81,16 @@
       :_  state(query (~(put by query) eyre-id request-body))
       (hit-rest-api [db-ip eyre-id])
     ++  parse-graphql-request
-      |=  [query=@t eyre-id=@ta]
-      ^-  [response-tape=@t cards=(list card)]
-      =,  dejs:format
-
-      ::  Take the query, which is a cord, and turn it into a tape
-      =/  query-tape  (trip query)
-
-      ::  Replace instances of certain tapes in query-tap, turn it back into a cord and parse it as JSON
-      =+  to-json=(de-json:html (crip (replace-all (replace-all query-tape "\\n" "") "  " " ")))
-
-      ::  Turn to-json to a unit with need
-      ::  Then parse (with om) the object inside as a map
-      ::  And (with so) the string inside that as a cord
-      ::  The final output of om-so-need-to-json is a map
-      ::  See ++om:dejs:format and ++so:dejs:format in zuse.hoon
-      =+  om-so-need-to-json=((om so) (need to-json))
-
-      ::  Access the value at the 'query' key in the om-so-need-to-json map using +-got:by
-      ::  See https://urbit.org/docs/reference/library/2i/#got-by
-      =+  my-body-tape=(trip (~(got by om-so-need-to-json) 'query'))
-
-      ::  Remove duplicate spaces from my-body-tape
-      =+  my-body-tape=(remove-duplicate-spaces my-body-tape)
-
-      ::  Create a list of indices of every occurence of the ' ' in my-body-tape
-      =+  fand-spaces=(fand ~[' '] my-body-tape)
-
-      ::  Create a cell with the first two elements of the fand-spaces list
-      ::  This corresponds to the first two occurences of the ' ' in my-body-tape
-      =+  fand-items-1=[(snag 0 fand-spaces) (snag 1 fand-spaces)]
-
-      ::  Get the number of characters between the first two spaces in the tape
-      ::  These will be used to get the first word, i.e. "query" or "mutation"
-      =+  substring-range-1=(sub (sub (tail fand-items-1) (head fand-items-1)) 1)
-
-      ::  Create a cell that will passed as a sample to swag, which makes a substring from a longer string
-      ::  The head of that cell is the inclusive index at which to start
-      ::  The tail of that cell is the number of following characters to include in the substring
-      ::  We add 1 to the head so it begins on the character after the first space in the tape
-      =+  swag-cell-1=[(add (head fand-items-1) 1) substring-range-1]
-
-      ::  Use swag to determine if the first word in the tape is "query" or "mutation"
-      ::  TODO: Add error handling for misspelled request that do not start with "query" or "mutation"
-      =/  query-or-mutation=tape  (swag swag-cell-1 my-body-tape)
-
-      ::  Create a cell with the indices of the third and four spaces in the tape
-      =+  fand-items-2=[(snag 2 fand-spaces) (snag 3 fand-spaces)]
-
-      ::  Get the number of characters between the third and fourth spaces in the tape
-      ::  These will be used to get the second word, i.e. "getBooks"
-      =+  substring-range-2=(sub (sub (tail fand-items-2) (head fand-items-2)) 1)
-
-      ::  Create a cell that will passed as a sample to swag
-      ::  We add 1 to the head so it begins on the character after the third space in the tape
-      =+  swag-cell-2=[(add (head fand-items-2) 1) substring-range-2]
-
-      ::  Make a tape of the second word in the tape, i.e. "getBooks"
-      =/  query-or-mutation-name=tape  (swag swag-cell-2 my-body-tape)
-
-      ::  Make a list of all indices of the character { in the tape and reverse it
-      =+  first-flop=(flop (fand ~['{'] my-body-tape))
-
-      ::  Make a tape of everything after the last occurrence of {
-      =+  slagged=(slag (head first-flop) my-body-tape)
-
-      :: =+  db-ip=(~(get by env-vars) %db-ip)
-      :: ~&  "db-ip below"
-      :: ~&  db-ip
-
-      :: =/  rest-api-request  (hit-rest-api [db-ip eyre-id])
-      :: ~&  "rest-api-request below"
-      :: ~&  rest-api-request
-      ::  Get rid of remaining characters we don't want
-      =/  replace
-        %^  replace-all
-          %^  replace-all
-            %^  replace-all  slagged  " "  ""
-          "}"  ""
-        "\{"  ""
-      ~&  "replace below"
-      ~&  replace
-
-      ::  If it's a mutation, go to the process-mutation arm
-      ?:  =(query-or-mutation "mutation")
-        [(process-mutation [my-body-tape replace]) rest-api-request]
-
-      ::  If it's a query, go to the process-query arm
-      ?:  =(query-or-mutation "query")
-        [(process-query [query-or-mutation-name replace]) rest-api-request]
+      |=  [eyre-id=@ta payload=simple-payload:http]
+      :: ^-  [response-tape=@t cards=(list card)]
+      ~&  "state in parse-graphql-request below"
+      ~&  state
+      ~&  "state(query (~(put by query) eyre-id request-body)) in parse-graphql-request below"
+      ~&  state(query (~(got by query) eyre-id))
       
-      ::  Else return an error (just a cord rather than formal error for now)
-      ['Request is not valid' rest-api-request]
+
+      
+      (give-simple-payload:app eyre-id payload)
     ++  process-query
       |=  [query-name=tape replace=tape]
       ^-  @t
@@ -260,6 +179,12 @@
       ?:  =((lent (fand "  " output)) 0)
         output
       $(output (replace-all output "  " " "))
+    ++  test-arm
+      |=  [eyre-id=@ta payload=simple-payload:http]
+      ~&  "running test-arm"
+      ~&  "payload in test-arm"
+      ~&  payload
+      (give-simple-payload:app eyre-id payload)
     ++  hit-rest-api
       |=  [url=@t eyre-id=@ta]
       ^-  (list card)
@@ -278,10 +203,10 @@
       ~&  "data in http-response"
       ~&  data
       =/  payload=simple-payload:http  [[200 ~] [~ data.u.data]]
-      ~&  "query in http-response below"
-      ~&  query
       :: Store a map in state mapping between eyre-id and query tape
       :: After my data gets back, pass it and my query tape into parse-graphql-request
-      (give-simple-payload:app eyre-id payload)
+      (parse-graphql-request [eyre-id payload])
+      :: (test-arm [eyre-id payload])
+      :: (give-simple-payload:app eyre-id payload)
   --
   

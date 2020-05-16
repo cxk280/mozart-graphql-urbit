@@ -89,4 +89,6 @@ Future features include the following principal elements of a complete GraphQL S
 *  A test suite
 *  A MongoDB driver for direct routing to the database without the mediation of a Node server
 
+I also intend a major refactoring of the string parsing logic. Currently, strings are `tapes` manipulated with `map` logic, as I did not yet grasp Hoon's actual string parsing methods very well. This `map` logic will be replaced with more generalized `arms` containing proper parsing methods. 
+
 Contributors: this repo follows the [Conventional Commit](https://www.conventionalcommits.org/) spec. You may wish to download the [VSCode Conventional Commit extension](https://marketplace.visualstudio.com/items?itemName=vivaxy.vscode-conventional-commits) if you use VSCode as your text editor.
