@@ -5,7 +5,7 @@ This project is a GraphQL Server established according to the official spec (see
 As currently implemented, Mozart parses incoming GraphQL requests and sends an outbound request to a Node server which returns a result from a MongoDB database. Current functionality is limited to queries. An illustration of the workflow is below:
 
 <p align="center">
-  ![Mozart Flowchart](mozart_flowchart.svg)
+  <img align="center" src="mozart_flowchart.svg" alt="Mozart Flowchart">
 </p>
 
 Before running, please create a file name `env-vars.hoon` in `/home/lib` to save your environmental variables in a map in the following format:
