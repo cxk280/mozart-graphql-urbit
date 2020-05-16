@@ -1,6 +1,6 @@
 # Mozart, a GraphQL Server for Hoon
 
-This project is a GraphQL Server established according to the official spec (see [here](https://github.com/graphql/graphql-spec) and [here](https://spec.graphql.org/June2018/)). It is client-agnostic. So far, we've been testing it with [Insomnia](https://insomnia.rest/), which offers a handy option to send a GraphQL-formatted request, but technically any HTTP POST request conforming to the spec should work.
+This project is a GraphQL Server established according to the official spec (see [here](https://github.com/graphql/graphql-spec) and [here](https://spec.graphql.org/June2018/)). It is client-agnostic. So far, I've have been testing it with [Insomnia](https://insomnia.rest/), which offers a handy option to send a GraphQL-formatted request, but technically any HTTP POST request conforming to the spec should work.
 
 As currently implemented, Mozart parses incoming GraphQL requests and sends an outbound request to a Node server which returns a result from a MongoDB database. Current functionality is limited to queries. An illustration of the workflow is below:
 
@@ -17,7 +17,7 @@ Before running, please create a file name `env-vars.hoon` in `/home/lib` to save
 (my ~[[%one 1] [%two 2] [%three 3]])
 ```
 
-Three are listed above to give an example of how a list of environmental variables looks, but for the current implementation of Mozart, you only need a single variable `%db-ip`, which is a cord. I provide this variable in my email submitting the hackathon project and can provide it to anyone else as needed. Just send me an email at chris@cking.me. Ultimately, `env-vars.hoon` will look like this:
+Three are listed above to give an example of how a list of environmental variables looks, but for the current implementation of Mozart, you only need a single variable `%db-ip`, which is a cord. I provide this variable in the email submitting the hackathon project and can provide it to anyone else as needed. Just send me an email at chris@cking.me. Ultimately, `env-vars.hoon` will look like this:
 
 ```
 (my ~[[%db-ip 'an IP address']])
@@ -43,7 +43,7 @@ or
 }
 ```
 
-You should receive the proper data in response. For now, this response is a simple string indicating the data payload returned. Eventually, we intend to have detailed responses including relevant metadata about the request.
+You should receive the proper data in response. For now, this response is a simple string indicating the data payload returned. Eventually, I intend to have detailed responses including relevant metadata about the request.
 
 Future features include the following principal elements of a complete GraphQL Server:
 
