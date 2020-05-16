@@ -4,7 +4,12 @@
 
 |%
   +$  card  card:agent:gall
+  +$  state-type
+    $:  query=(map @ta @t)
+    ==
 --
+=|  state-type
+=*  state  -
 ^-  agent:gall
 =<
   |_  =bowl:gall
@@ -18,11 +23,11 @@
       ^-  (quip card _this)
       :_  this
       [[%pass / %arvo %e %connect [~ /'~graphqltest'] dap.bowl] ~]
-    ++  on-save   on-save:def
+    ++  on-save   !>(state)
     ++  on-load
       |=  =vase
       ^-  (quip card _this)
-      :_  this
+      :_  this(state !<(state-type vase))
       [[%pass / %arvo %e %connect [~ /'~graphqltest'] dap.bowl] ~]
     ++  on-poke
       |=  [=mark =vase]
@@ -39,13 +44,15 @@
         :: With authorization
         :: %+  require-authorization:app  inbound-request
         :: poke-handle-http-request:graphql
-
+        =.  state  poke-handle-http-request
         :: Without authorization
-        =/  my-request  (poke-handle-http-request:graphql inbound-request)
+        =/  my-request  (poke-handle-http-request:graphql [inbound-request eyre-id])
         ::  cards:my-request has the HTTP GET request to send out, as a (list card)
         :: payload:my-request
-        %+  weld  cards:my-request
-        (give-simple-payload:app eyre-id payload:my-request)
+        :: I still want to produce the cards, but I also still want to get the state that was changed
+        cards:my-request
+        :: %+  weld  cards:my-request
+        :: (give-simple-payload:app eyre-id payload:my-request)
       ==
 
     ::  Use on-watch for handling/accepting initial subscription for each request (REQUIRED FOR HTTP)
@@ -58,30 +65,38 @@
     ++  on-leave  on-leave:def
     ++  on-peek   on-peek:def
     ++  on-agent  on-agent:def
+    ::  on-arvo is called when I get a response from a system request I've made
+    ::  on-arvo will be called when the response from my outgoing GET request comes back
     ++  on-arvo
       |=  [=wire =sign-arvo]
       ^-  (quip card _this)
-      ?:  ?=(%http-response +<.sign-arvo)
+      ?:  ?=([%rest-request @ ~] wire)
+        =*  eyre-id  i.t.wire
+        ?>  ?=(%http-response +<.sign-arvo)
         :_  this
-        (http-response:do client-response.sign-arvo)
+        (http-response:do eyre-id client-response.sign-arvo)
       (on-arvo:def wire sign-arvo)
     ++  on-fail   on-fail:def
   --
   |_  =bowl:gall
     ++  poke-handle-http-request   
-      |=  req=inbound-request:eyre
-      ^-  [payload=simple-payload:http cards=(list card)]
+      |=  [req=inbound-request:eyre eyre-id=@ta]
+      :: ^-  [payload=simple-payload:http cards=(list card)]
+      ^+  state
       ?~  body.request.req
         ~&  %invalid-post-no-body
           !!
       =+  request-body=q.u.body.request.req
-      =/  gql-request  (parse-graphql-request `@t`request-body)
-      =/  parsed-payload  (trip response-tape:gql-request)
-      ~&  "cards:gql-request in poke-handle-http-request below"
-      ~&  cards.gql-request
-      [[[200 ~] [~ (as-octt:mimes:html parsed-payload)]] cards.gql-request]
+      ~&  "request-body in poke-handle-http-request"
+      ~&  request-body
+      state(query (~(put by query) eyre-id request-body))
+      :: =/  gql-request  (parse-graphql-request [`@t`request-body eyre-id])
+      :: =/  parsed-payload  (trip response-tape:gql-request)
+      :: ~&  "cards:gql-request in poke-handle-http-request below"
+      :: ~&  cards.gql-request
+      :: [[[200 ~] [~ (as-octt:mimes:html parsed-payload)]] cards.gql-request]
     ++  parse-graphql-request
-      |=  query=@t
+      |=  [query=@t eyre-id=@ta]
       ^-  [response-tape=@t cards=(list card)]
       =,  dejs:format
       ~&  "query raw argument below"
@@ -121,9 +136,6 @@
       =+  fand-items-1=[(snag 0 fand-spaces) (snag 1 fand-spaces)]
       ~&  "fand-items-1 below"
       ~&  fand-items-1
-
-      :: Delete the following line
-      :: (sell (mule |.(slap !>(.) (ream “~[1 2 3]”))))
 
       ::  Get the number of characters between the first two spaces in the tape
       ::  These will be used to get the first word, i.e. "query" or "mutation"
@@ -179,11 +191,9 @@
 
       :: ~&  "env-vars %one below"
       :: ~&  (~(get by env-vars) %one)
-      :: ~&  "(hit-rest-api 'http://167.172.210.199/') below"
-      :: ~&  (hit-rest-api 'http://167.172.210.199/')
-      =/  rest-api-result  (hit-rest-api 'http://167.172.210.199/')
-      ~&  "rest-api-result below"
-      ~&  rest-api-result
+      =/  rest-api-request  (hit-rest-api ['http://167.172.210.199/' eyre-id])
+      ~&  "rest-api-request below"
+      ~&  rest-api-request
       ::  Get rid of remaining characters we don't want
       =/  replace
         %^  replace-all
@@ -196,14 +206,14 @@
 
       ::  If it's a mutation, go to the process-mutation arm
       ?:  =(query-or-mutation "mutation")
-        [(process-mutation [my-body-tape replace]) rest-api-result]
+        [(process-mutation [my-body-tape replace]) rest-api-request]
 
       ::  If it's a query, go to the process-query arm
       ?:  =(query-or-mutation "query")
-        [(process-query [query-or-mutation-name replace]) rest-api-result]
+        [(process-query [query-or-mutation-name replace]) rest-api-request]
       
       ::  Else return an error (just a cord rather than formal error for now)
-      ['Request is not valid' rest-api-result]
+      ['Request is not valid' rest-api-request]
     ++  process-query
       |=  [query-name=tape replace=tape]
       ^-  @t
@@ -356,14 +366,15 @@
         output
       $(output (replace-all output "  " " "))
     ++  hit-rest-api
-      |=  url=@t
+      |=  [url=@t eyre-id=@ta]
       ^-  (list card)
       =/  hed  ['Accept' 'application/json']~
       =/  out  *outbound-config:iris
       =/  req=request:http  [%'GET' url hed ~]
-      [%pass /my-request-wire/[(scot %da now.bowl)] %arvo %i %request req out]~
+      :: [%pass /my-request-wire/[(scot %da now.bowl)] %arvo %i %request req out]~
+      [%pass /rest-request/[eyre-id] %arvo %i %request req out]~
     ++  http-response
-      |=  res=client-response:iris
+      |=  [eyre-id=@ta res=client-response:iris]
       ^-  (list card)
       ::  ignore all but %finished
       ?.  ?=(%finished -.res)
@@ -373,6 +384,11 @@
         ~
       ~&  "data in http-response"
       ~&  data
-      [%pass / %arvo %d %flog %text (trip q.data.u.data)]~
+      =/  payload=simple-payload:http  [[200 ~] [~ data.u.data]]
+      ~&  "query in http-response below"
+      ~&  query
+      :: Store a map in state mapping between eyre-id and query tape
+      :: After my data gets back, pass it and my query tape into parse-graphql-request
+      (give-simple-payload:app eyre-id payload)
   --
   
