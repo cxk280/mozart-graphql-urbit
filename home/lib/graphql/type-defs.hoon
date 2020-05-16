@@ -15,19 +15,21 @@
 :: }
 ::
 
+::  You can use getbooks-query-data for testing without using the external endpoint.
+
 |%
   +$  item-body  [item-key=tape item-value=tape]
   +$  item-container  [tipe=tape item-bodies=(list item-body)]
   +$  request-body  [request-name=tape item-containers=(list item-container)]
   +$  request-container  [tipe=tape query=(list tape)]
   ++  type-query
-    |=  a/(list tape)
+    |=  a=(list tape)
     ^-  request-container
     ?~  a
       !!
     ["Query" a]
   ++  type-book
-    |=  a/request-container
+    |=  [a=request-container payload=simple-payload:http]
     ^-  request-body
     ?~  a
       !!
@@ -35,7 +37,11 @@
     ?~  query
       !!
     =+  query-name=(head query)
-    =+  ommed-query-data=((om so) getbooks-query-data)
+    =/  data-payload-tail  (tail data.payload)
+    =/  de-jsonned  (tail (de-json:html q.data-payload-tail))
+    ::  You can use getbooks-query-data for testing without using the external endpoint.
+    ::  Simply pass it in the line below instead of de-jsonned
+    =+  ommed-query-data=((om so) de-jsonned)
     =+  name-and-title=[(trip (~(got by ommed-query-data) 'author')) (trip (~(got by ommed-query-data) 'title'))]
     =+  output=*(list item-container)
     =+  iterator=0
