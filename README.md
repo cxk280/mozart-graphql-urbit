@@ -2,7 +2,9 @@
 
 This project is a GraphQL Server established according to the official spec (see [here](https://github.com/graphql/graphql-spec) and [here](https://spec.graphql.org/June2018/)). It is client-agnostic. So far, we've been testing it with [Insomnia](https://insomnia.rest/), which offers a handy option to send a GraphQL-formatted request, but technically any HTTP POST request conforming to the spec should work.
 
-The options for using Urbit as a database are currently limited, so for the time being Mozart simply relies upon a JSON file in `/home/lib/graphql/` as its data source. Current functionality is limited to queries.
+As currently implemented, Mozart parses incoming GraphQL requests and sends an outbound request to a Node server which returns a result from a MongoDB database. Current functionality is limited to queries. An illustration of the workflow is below:
+
+![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
 
 Before running, please create a file name `env-vars.hoon` in `/home/lib` to save your environmental variables in a map in the following format:
 
@@ -10,9 +12,13 @@ Before running, please create a file name `env-vars.hoon` in `/home/lib` to save
 (my ~[[%one 1] [%two 2] [%three 3]])
 ```
 
-For testing the hackathon project, this file should contain credentials to the MongoDB Atlas database to which the GraphQL app is connecting.
+Three are listed above to give an example of how a list of environmental variables looks, but for the current implementation of Mozart, you only need a single variable `%db-ip`, which is a cord. I provide this variable in my email submitting the hackathon project and can provide it to anyone else as needed. Just send me an email at chris@cking.me. Ultimately, `env-vars.hoon` will look like this:
 
-To test, use Insomnia or a similar tool to send a GraphQL request of the following form:
+```
+(my ~[[%db-ip 'an IP address']])
+```
+
+To test Mozart, use Insomnia or a similar tool to send a GraphQL request of the following form:
 
 ```
 {
@@ -46,12 +52,36 @@ Future features include the following principal elements of a complete GraphQL S
     }
   }
   ```
+*  Handle nested query layers at depths of more than one, like the following:
 
-*  Mutations with and without inputs
+  ```
+  {
+    composers {
+      baroque {
+        bach {
+          nationality
+        }
+      }
+      classical {
+        mozart {
+          nationality
+        }
+      }
+      romantic {
+        chopin {
+          nationality
+        }
+      }
+    }
+  }
+  ```
+
+*  Mutations with and without inputs (partially implemented already)
 *  Rigorous validation (basic validation is already included)
 *  Extensive error handling for malformed queries and mutations
 *  Introspection
 *  User auth
 *  A test suite
+*  A MongoDB driver for direct routing to the database without the mediation of a Node server
 
 Contributors: this repo follows the [Conventional Commit](https://www.conventionalcommits.org/) spec. You may wish to download the [VSCode Conventional Commit extension](https://marketplace.visualstudio.com/items?itemName=vivaxy.vscode-conventional-commits) if you use VSCode as your text editor.

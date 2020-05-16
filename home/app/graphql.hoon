@@ -32,29 +32,18 @@
     ++  on-poke
       |=  [=mark =vase]
       ^-  (quip card _this)
-      :: ?.  ?=(%noun mark)  [~ this]
-      ::: ~&  [%poked-with-a-noun !<(* vase)]
-      :: [~ this]
+      =^  cards  state
       ?+  mark  (on-poke:def mark vase)
           %handle-http-request
         =+  !<([eyre-id=@ta =inbound-request:eyre] vase)
         :_  this
-        :: %+  give-simple-payload:app  eyre-id
-
-        :: With authorization
-        :: %+  require-authorization:app  inbound-request
-        :: poke-handle-http-request:graphql
         =.  state  poke-handle-http-request
-        :: Without authorization
-        =/  my-request  (poke-handle-http-request:graphql [inbound-request eyre-id])
-        ::  cards:my-request has the HTTP GET request to send out, as a (list card)
-        :: payload:my-request
-        :: I still want to produce the cards, but I also still want to get the state that was changed
-        cards:my-request
-        :: %+  weld  cards:my-request
-        :: (give-simple-payload:app eyre-id payload:my-request)
+        (poke-handle-http-request:graphql [inbound-request eyre-id])
       ==
-
+      :: I still want to produce the cards, but I also still want to get the state that was changed
+      :: I might want to consider looking at =^
+      [cards this]
+    ::
     ::  Use on-watch for handling/accepting initial subscription for each request (REQUIRED FOR HTTP)
     ++  on-watch
       |=  =path
