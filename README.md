@@ -1,6 +1,6 @@
 # Mozart, a GraphQL Server for Hoon
 
-This project is a GraphQL Server established according to the official spec (see [here](https://github.com/graphql/graphql-spec) and [here](https://spec.graphql.org/June2018/)). It is client-agnostic. So far, I've have been testing it with [Insomnia](https://insomnia.rest/), which offers a handy option to send a GraphQL-formatted request, but technically any HTTP POST request conforming to the spec should work.
+This project is a GraphQL Server established according to the official spec (see [here](https://github.com/graphql/graphql-spec) and [here](https://spec.graphql.org/June2018/)). It is client-agnostic. So far, I've have been testing it with [Insomnia](https://insomnia.rest/), which offers a handy option to send a GraphQL-formatted request, but technically any HTTP POST request conforming to the spec should work. Running locally, its endpoint is `localhost:<some_port>/~graphqltest`.
 
 While one day there will no doubt be an excellent Urbit package manager that will handle everything, at this point in time I felt the best way to keep track of things in a git repo was including an entire ship and adding some additional needed files (this README, a `.gitignore`, etc.). Mozart-specific code is located in `/zod/home/app/graphql.hoon` and `/zod/hom/lib/graphql/`. Everything else is boilerplate that comes with a new fakezod, although this may not be obvious from the commit history as I squashed everything together for simplicity's sake.
 
