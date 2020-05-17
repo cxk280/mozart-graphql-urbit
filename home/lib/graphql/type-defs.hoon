@@ -15,8 +15,6 @@
 :: }
 ::
 
-::  You can use getbooks-query-data for testing without using the external endpoint.
-
 |%
   +$  item-body  [item-key=tape item-value=tape]
   +$  item-container  [tipe=tape item-bodies=(list item-body)]
@@ -39,6 +37,7 @@
     =+  query-name=(head query)
     =/  data-payload-tail  (tail data.payload)
     =/  de-jsonned  (tail (de-json:html q.data-payload-tail))
+
     ::  You can use getbooks-query-data for testing without using the external endpoint.
     ::  Simply pass it in the line below instead of de-jsonned
     =+  ommed-query-data=((om so) de-jsonned)
