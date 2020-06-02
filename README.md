@@ -45,7 +45,15 @@ or
 }
 ```
 
-You should receive the proper data in response. For now, this response is a simple string indicating the data payload returned. Eventually, I intend to have detailed responses including relevant metadata about the request.
+You should receive the proper data in response, as seen below:
+
+<br></br>
+<p align="center">
+  <img align="center" src="mozart_in_action.gif" alt="Mozart in Action">
+</p>
+<br></br>
+
+For now, this response is a simple string indicating the data payload returned. Eventually, I intend to have detailed responses including relevant metadata about the request.
 
 Future features include the following principal elements of a complete GraphQL Server:
 
